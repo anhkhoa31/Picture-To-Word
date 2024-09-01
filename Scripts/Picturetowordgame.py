@@ -181,6 +181,21 @@ audio_button_x = SCREEN_WIDTH - audio_button_width - 20
 audio_button_y = 10
 audio_button_rect = pygame.Rect(audio_button_x, audio_button_y, audio_button_width, audio_button_height)
 
+def play_bgm():
+    pygame.mixer.music.load("Audio/BGM.wav")
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(0.3)
+
+def stop_bgm():
+    pygame.mixer.music.stop()
+
+def pause_bgm():
+    pygame.mixer.music.pause()
+
+def unpause_bgm():
+    pygame.mixer.music.unpause()
+
+
 # Define category buttons
 category_button_width = 200
 category_button_height = 50
@@ -482,6 +497,7 @@ def show_congrats_message():
 
     current_state = STAGE_SELECTION
 
+
 def handle_mouse_click(x, y):
     global current_state, selected_category, stage_buttons, stage_button_texts
     global stage_images, audio_files, stages, incorrect_click_time, correctly_clicked_letters, guessed_word
@@ -489,8 +505,10 @@ def handle_mouse_click(x, y):
     if current_state == MAIN_MENU:
         if play_button_rect.collidepoint(x, y):
             current_state = INTRO_SCENE
+            play_bgm()
         elif exit_button_rect.collidepoint(x, y):
             save_game_progress()
+            stop_bgm()
             pygame.quit()
             sys.exit()
 
@@ -542,7 +560,10 @@ def handle_mouse_click(x, y):
             current_state = STAGE_SELECTION
         elif audio_button_rect.collidepoint(x, y):
             if 0 <= current_stage < len(audio_files):
+                pause_bgm()
+                time.sleep(0)
                 audio_files[current_stage].play()
+                unpause_bgm()
         else:
             for row_idx, row in enumerate(rows):
                 row_start_x = (SCREEN_WIDTH - (box_size + box_spacing) * len(row)) // 2
