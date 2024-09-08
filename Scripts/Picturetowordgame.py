@@ -32,6 +32,10 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
+LIGHT_YELLOW = (255, 255, 224)
+GOLD = (255, 223, 0)
+GREY = (200, 200, 200)
+DARK_GREY = (169, 169, 169)
 
 # Colors for buttons
 play_button_color = BLACK
@@ -54,6 +58,7 @@ completed_stage_color = (144, 238, 144)  # Light Green color for completed stage
 font = pygame.font.Font(None, 74)
 small_font = pygame.font.Font(None, 36)
 pixel_font = pygame.font.Font("pixel_font.ttf", 60)
+daily_reward_font = pygame.font.Font(None, 24)
 
 # Game states
 MAIN_MENU = "main_menu"
@@ -104,7 +109,7 @@ audio_folder_mapping = {
 unlocked_stages = {
     "Easy": [True] + [False] * 6,  # Only the first stage is unlocked initially
     "Medium": [True] + [False] * 6,
-    "Hard": [True] + [False] * 5   # Hard level has 6 stages
+    "Hard": [True] + [False] * 5  # Hard level has 6 stages
 }
 
 # Initialize the completed stages dictionary
@@ -114,8 +119,56 @@ completed_stages = {
     "Hard": [False] * 6
 }
 
+# Daily reward setup -----------------
+# Reward setup
+gems_per_day = [100 * (i + 1) for i in range(7)]
+total_gems = 0
+
+# Track which days have been claimed
+claimed_days = [False] * 7
+
+# Timer setup (5 seconds = 1 day)
+start_time = time.time()
+current_day = 0
+
+# Frame size and position
+frame_width = SCREEN_WIDTH * 0.8
+frame_height = SCREEN_HEIGHT * 0.42
+frame_x = (SCREEN_WIDTH - frame_width) / 2
+frame_y = (SCREEN_HEIGHT - frame_height) / 2
+
+# Number of day boxes on top and bottom
+num_boxes_top = 4
+num_boxes_bottom = 3
+
+# Margins and spacing
+margin = 10
+spacing = 20
+
+# Calculate box size
+available_height = frame_height * 1.4 - spacing
+box_height = (available_height - (num_boxes_bottom - 1) * margin) / num_boxes_bottom
+box_width = (frame_width - (num_boxes_top + 1) * margin) / num_boxes_top
+
+# Gem icon
+gem_icon_image = pygame.image.load("Images/Icon/gem_icon.png")
+gem_icon_size = 24
+gem_icon_image = pygame.transform.scale(gem_icon_image, (gem_icon_size, gem_icon_size))
+
+# Reward icon
+icon_image = pygame.image.load("Images/Icon/gift_icon.png")
+icon_image = pygame.transform.scale(icon_image, (gem_icon_size, gem_icon_size))
+
+# Reward icon position
+icon_y = 20
+
+# Track if the reward frame is visible
+show_reward_frame = False
+# ------------------------------
+
 # JSON file to save and load the game state
 SAVE_FILE = "game_save.json"
+
 
 def load_game_progress():
     global completed_stages, unlocked_stages
@@ -125,6 +178,7 @@ def load_game_progress():
             completed_stages = data.get("completed_stages", completed_stages)
             unlocked_stages = data.get("unlocked_stages", unlocked_stages)
 
+
 def save_game_progress():
     data = {
         "completed_stages": completed_stages,
@@ -132,6 +186,7 @@ def save_game_progress():
     }
     with open(SAVE_FILE, "w") as file:
         json.dump(data, file)
+
 
 # Load first map image
 map_image = pygame.image.load("Images/new_map.jpg")  # First map (behind Tutor guy)
@@ -181,16 +236,20 @@ audio_button_x = SCREEN_WIDTH - audio_button_width - 20
 audio_button_y = 10
 audio_button_rect = pygame.Rect(audio_button_x, audio_button_y, audio_button_width, audio_button_height)
 
+
 def play_bgm():
     pygame.mixer.music.load("Audio/BGM.wav")
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(0.3)
 
+
 def stop_bgm():
     pygame.mixer.music.stop()
 
+
 def pause_bgm():
     pygame.mixer.music.pause()
+
 
 def unpause_bgm():
     pygame.mixer.music.unpause()
@@ -212,6 +271,7 @@ background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREE
 
 stage_images = []
 audio_files = []
+
 
 def draw_main_menu():
     screen.fill(WHITE)
@@ -237,6 +297,53 @@ def draw_main_menu():
     exit_button_text = small_font.render("Exit", True, WHITE)
     screen.blit(exit_button_text, (exit_button_rect.x + (exit_button_rect.width - exit_button_text.get_width()) // 2,
                                    exit_button_rect.y + (exit_button_rect.height - exit_button_text.get_height()) // 2))
+
+    # Draw daily reward system if applicable
+    if show_reward_frame:
+        pygame.draw.rect(screen, GREY, (frame_x, frame_y, frame_width, frame_height), 2)
+        for i in range(num_boxes_top):
+            x = frame_x + (i * (box_width + margin)) + margin
+            y = frame_y + spacing
+            box_color = DARK_GREY if claimed_days[i] else GOLD
+            pygame.draw.rect(screen, box_color, (x, y, box_width, box_height))
+            day_text = daily_reward_font.render(f"Day {i + 1}", True, BLACK)
+            day_text_rect = day_text.get_rect(center=(x + box_width / 2, y + box_height / 2 - 10))
+            screen.blit(day_text, day_text_rect)
+            reward_text = daily_reward_font.render(f"{gems_per_day[i]}", True, BLACK)
+            gem_icon_x = x + (box_width - gem_icon_size - reward_text.get_width()) / 2
+            gem_icon_y = y + box_height / 2
+            screen.blit(gem_icon_image, (gem_icon_x, gem_icon_y - 3))
+            reward_text_rect = reward_text.get_rect(
+                center=(gem_icon_x + gem_icon_size + reward_text.get_width() / 2, gem_icon_y + 10))
+            screen.blit(reward_text, reward_text_rect)
+        for i in range(num_boxes_bottom):
+            x = frame_x + (i * (box_width + margin)) + margin
+            y = frame_y + box_height + spacing * 2
+            box_color = DARK_GREY if claimed_days[num_boxes_top + i] else GOLD
+            pygame.draw.rect(screen, box_color, (x, y, box_width, box_height))
+            day_text = daily_reward_font.render(f"Day {num_boxes_top + i + 1}", True, BLACK)
+            day_text_rect = day_text.get_rect(center=(x + box_width / 2, y + box_height / 2 - 10))
+            screen.blit(day_text, day_text_rect)
+            reward_text = daily_reward_font.render(f"{gems_per_day[num_boxes_top + i]}", True, BLACK)
+            gem_icon_x = x + (box_width - gem_icon_size - reward_text.get_width()) / 2
+            gem_icon_y = y + box_height / 2
+            screen.blit(gem_icon_image, (gem_icon_x, gem_icon_y - 3))
+            reward_text_rect = reward_text.get_rect(
+                center=(gem_icon_x + gem_icon_size + reward_text.get_width() / 2, gem_icon_y + 10))
+            screen.blit(reward_text, reward_text_rect)
+
+    # Draw the gem icon, total gems, and reward icon
+    total_gems_text = small_font.render(f"{total_gems}", True, GOLD)
+    total_gems_width = total_gems_text.get_width()
+    gem_icon_x = SCREEN_WIDTH - 20 - gem_icon_size - total_gems_width - 10 - gem_icon_size - 10
+    total_gems_x = gem_icon_x + gem_icon_size + 5
+    global icon_x
+    icon_x = total_gems_x + total_gems_width + 10
+    screen.blit(gem_icon_image, (gem_icon_x, icon_y))
+    total_gems_rect = total_gems_text.get_rect(midleft=(total_gems_x, icon_y + gem_icon_size / 2))
+    screen.blit(total_gems_text, total_gems_rect)
+    screen.blit(icon_image, (icon_x, icon_y))
+
 
 def draw_intro_scene():
     global current_state
@@ -278,6 +385,7 @@ def draw_intro_scene():
     # Update the current state to transition to the category scene
     current_state = CATEGORY_SCENE
 
+
 def draw_category_scene():
     screen.fill(WHITE)
     if background_image:
@@ -309,6 +417,7 @@ def draw_category_scene():
                                                rect.y + (rect.height - category_button_texts[i].get_height()) // 2))
 
     pygame.display.flip()
+
 
 def draw_stage_selection():
     screen.fill(WHITE)
@@ -353,6 +462,7 @@ def draw_stage_selection():
             screen.blit(locked_text, (rect.x + (rect.width - locked_text.get_width()) // 2,
                                       rect.y + (rect.height - locked_text.get_height()) // 2))
 
+
 def handle_stage_selection(stage_index):
     global current_stage, word_to_guess, guessed_word, correctly_clicked_letters, current_state
     global all_letters, rows, score
@@ -373,6 +483,7 @@ def handle_stage_selection(stage_index):
     rows = [all_letters[i:i + 5] for i in range(0, len(all_letters), 5)]
 
     current_state = GAME_SCENE
+
 
 def draw_game_scene():
     global current_stage, incorrect_click_time, score
@@ -401,7 +512,8 @@ def draw_game_scene():
     else:
         pygame.draw.rect(screen, play_button_color, audio_button_rect)
     audio_button_text = small_font.render("Play Audio", True, WHITE)
-    screen.blit(audio_button_text, (audio_button_rect.x + (audio_button_rect.width - audio_button_text.get_width()) // 2,
+    screen.blit(audio_button_text,
+                (audio_button_rect.x + (audio_button_rect.width - audio_button_text.get_width()) // 2,
                  audio_button_rect.y + (audio_button_rect.height - audio_button_text.get_height()) // 2))
 
     draw_word_boxes()
@@ -418,6 +530,7 @@ def draw_game_scene():
         current_state = CONGRATS
         show_congrats_message()
 
+
 def draw_word_boxes():
     total_width = len(guessed_word) * (box_size + box_spacing) - box_spacing
     start_x = (SCREEN_WIDTH - total_width) // 2
@@ -430,6 +543,7 @@ def draw_word_boxes():
             screen.blit(letter_surface, (
                 x + (box_size - letter_surface.get_width()) // 2,
                 start_y + (box_size - letter_surface.get_height()) // 2))
+
 
 def draw_letter_boxes():
     for row_idx, row in enumerate(rows):
@@ -444,6 +558,7 @@ def draw_letter_boxes():
                 screen.blit(letter_surface, (
                     x + (box_size - letter_surface.get_width()) // 2,
                     y + (box_size - letter_surface.get_height()) // 2))
+
 
 def show_congrats_message():
     global current_state
@@ -501,6 +616,7 @@ def show_congrats_message():
 def handle_mouse_click(x, y):
     global current_state, selected_category, stage_buttons, stage_button_texts
     global stage_images, audio_files, stages, incorrect_click_time, correctly_clicked_letters, guessed_word
+    global show_reward_frame, claimed_days, total_gems, start_time, current_day
 
     if current_state == MAIN_MENU:
         if play_button_rect.collidepoint(x, y):
@@ -511,6 +627,36 @@ def handle_mouse_click(x, y):
             stop_bgm()
             pygame.quit()
             sys.exit()
+        # Handle Reward icon click
+        elif icon_x < x < icon_x + gem_icon_size and icon_y < y < icon_y + gem_icon_size:
+            show_reward_frame = not show_reward_frame  # Toggle reward frame visibility
+        # Handle clicking outside the reward frame
+        elif show_reward_frame:
+            if not (frame_x < x < frame_x + frame_width and frame_y < y < frame_y + frame_height):
+                show_reward_frame = False  # Hide reward frame
+        # Handle daily reward boxes click
+        if show_reward_frame:
+            # Check if a box on the top row was clicked
+            for i in range(num_boxes_top):
+                if i > current_day:  # Prevent claiming future days
+                    continue
+                x_box = frame_x + (i * (box_width + margin)) + margin
+                y_box = frame_y + spacing
+                if x_box < x < x_box + box_width and y_box < y < y_box + box_height:
+                    if not claimed_days[i]:  # Check if the reward hasn't been claimed
+                        claimed_days[i] = True
+                        total_gems += gems_per_day[i]
+
+            # Check if a box on the bottom row was clicked
+            for i in range(num_boxes_bottom):
+                if num_boxes_top + i > current_day:  # Prevent claiming future days
+                    continue
+                x_box = frame_x + (i * (box_width + margin)) + margin
+                y_box = frame_y + box_height + spacing * 2
+                if x_box < x < x_box + box_width and y_box < y < y_box + box_height:
+                    if not claimed_days[num_boxes_top + i]:  # Check if the reward hasn't been claimed
+                        claimed_days[num_boxes_top + i] = True
+                        total_gems += gems_per_day[num_boxes_top + i]
 
     elif current_state == INTRO_SCENE:
         pass
@@ -552,7 +698,8 @@ def handle_mouse_click(x, y):
             current_state = CATEGORY_SCENE
         else:
             for i, rect in enumerate(stage_buttons):
-                if rect.collidepoint(x, y) and (unlocked_stages[selected_category][i] or completed_stages[selected_category][i]):
+                if rect.collidepoint(x, y) and (
+                        unlocked_stages[selected_category][i] or completed_stages[selected_category][i]):
                     handle_stage_selection(i)
 
     elif current_state == GAME_SCENE:
@@ -585,9 +732,11 @@ def handle_mouse_click(x, y):
                         return letter
     return None
 
+
 def show_incorrect_click_notification():
     notification_text = small_font.render("You chose the wrong letter", True, RED)
     screen.blit(notification_text, (SCREEN_WIDTH // 2 - notification_text.get_width() // 2, SCREEN_HEIGHT - 100))
+
 
 # Load game progress when the game starts
 load_game_progress()
@@ -595,6 +744,9 @@ load_game_progress()
 # Main loop
 running = True
 while running:
+    elapsed_time = time.time() - start_time
+    current_day = min(7, int(elapsed_time // 5))
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             save_game_progress()
