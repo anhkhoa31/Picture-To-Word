@@ -39,11 +39,11 @@ DARK_GREY = (169, 169, 169)
 
 # Colors for buttons
 play_button_color = BLACK
-play_button_hover_color = (50, 50, 50)  # Slightly lighter black for hover effect
+play_button_hover_color = (50, 50, 50)
 play_button_text_color = WHITE
 
 category_button_color = BLACK
-category_button_hover_color = (50, 50, 50)  # Slightly lighter black for hover effect
+category_button_hover_color = (50, 50, 50)
 category_button_text_color = WHITE
 
 # Exit button color
@@ -52,7 +52,7 @@ exit_button_hover_color = (240, 128, 128)
 
 # Locked and completed stage colors
 locked_stage_color = (169, 169, 169)
-completed_stage_color = (144, 238, 144)  # Light Green color for completed stages
+completed_stage_color = (144, 238, 144)
 
 # Fonts
 font = pygame.font.Font(None, 74)
@@ -67,7 +67,7 @@ CATEGORY_SCENE = "category_scene"
 STAGE_SELECTION = "stage_selection"
 GAME_SCENE = "game_scene"
 CONGRATS = "congrats"
-current_state = MAIN_MENU
+current_state = MAIN_MENU # Showing the main menu whenever the program runs
 
 # Define selected category and other global variables
 selected_category = None
@@ -164,7 +164,6 @@ icon_y = 20
 
 # Track if the reward frame is visible
 show_reward_frame = False
-# ------------------------------
 
 # JSON file to save and load the game state
 SAVE_FILE = "game_save.json"
@@ -172,18 +171,23 @@ SAVE_FILE = "game_save.json"
 
 def load_game_progress():
     global completed_stages, unlocked_stages
+    # Check the save_file if it exists
     if os.path.exists(SAVE_FILE):
+        # If it already exists open the file in read mode
         with open(SAVE_FILE, "r") as file:
+            # Load the file
             data = json.load(file)
             completed_stages = data.get("completed_stages", completed_stages)
             unlocked_stages = data.get("unlocked_stages", unlocked_stages)
 
 
 def save_game_progress():
+    # Save the data using dictionary data type
     data = {
         "completed_stages": completed_stages,
         "unlocked_stages": unlocked_stages
     }
+    # open the file in write mode
     with open(SAVE_FILE, "w") as file:
         json.dump(data, file)
 
@@ -260,7 +264,7 @@ category_button_width = 200
 category_button_height = 50
 category_buttons = [
     pygame.Rect((SCREEN_WIDTH - category_button_width) // 2, 200 + i * 80, category_button_width,
-                category_button_height)
+                category_button_height) # Adjusting the position of the category button
     for i in range(len(categories))
 ]
 category_button_texts = [small_font.render(category, True, WHITE) for category in categories]
@@ -275,17 +279,23 @@ audio_files = []
 
 def draw_main_menu():
     screen.fill(WHITE)
-    if background_image:
-        screen.blit(background_image, (0, 0))
+
+    # Place the image in the top left corner X: 0 and Y: 0
+    screen.blit(background_image, (0, 0))
 
     mouse_pos = pygame.mouse.get_pos()
 
     # Draw the Play button
+    # Change color if the pointer is inside the rectangular defined area
     if play_button_rect.collidepoint(mouse_pos):
+        # If the pointer is on the button change to hover color
         pygame.draw.rect(screen, play_button_hover_color, play_button_rect)
     else:
+        # If the pointer is not on the button use the pre-defined color
         pygame.draw.rect(screen, play_button_color, play_button_rect)
     play_button_text = small_font.render("Play", True, play_button_text_color)
+
+    # Place the text in the center of the button
     screen.blit(play_button_text, (play_button_rect.x + (play_button_rect.width - play_button_text.get_width()) // 2,
                                    play_button_rect.y + (play_button_rect.height - play_button_text.get_height()) // 2))
 
@@ -388,8 +398,8 @@ def draw_intro_scene():
 
 def draw_category_scene():
     screen.fill(WHITE)
-    if background_image:
-        screen.blit(background_image, (0, 0))
+
+    screen.blit(background_image, (0, 0))
 
     mouse_pos = pygame.mouse.get_pos()
 
@@ -402,12 +412,14 @@ def draw_category_scene():
     screen.blit(back_button_text, (back_button_rect.x + (back_button_rect.width - back_button_text.get_width()) // 2,
                                    back_button_rect.y + (back_button_rect.height - back_button_text.get_height()) // 2))
 
-    # Calculate total height required for buttons
+    # Set the gap for all buttons
     total_height = len(category_buttons) * category_button_height + (len(category_buttons) - 1) * 20
     starting_y = (SCREEN_HEIGHT - total_height) // 2
 
     for i, rect in enumerate(category_buttons):
+        # For each category button it has 20 pixels space between them
         rect.y = starting_y + i * (rect.height + 20)
+        # Place all buttons in the center of the screen
         rect.x = (SCREEN_WIDTH - rect.width) // 2
         if rect.collidepoint(mouse_pos):
             pygame.draw.rect(screen, category_button_hover_color, rect)
@@ -421,8 +433,8 @@ def draw_category_scene():
 
 def draw_stage_selection():
     screen.fill(WHITE)
-    if background_image:
-        screen.blit(background_image, (0, 0))
+
+    screen.blit(background_image, (0, 0))
 
     # Draw the Back button
     mouse_pos = pygame.mouse.get_pos()
@@ -441,15 +453,17 @@ def draw_stage_selection():
         rect.y = starting_y + i * (rect.height + 20)
         rect.x = (SCREEN_WIDTH - rect.width) // 2
 
-        # Determine the stage color based on its status (completed, unlocked, or locked)
+        # Apply color for completed stage, locked stage and unlocked stage
         if completed_stages[selected_category][i]:
-            stage_color = completed_stage_color  # Light Green for completed stages
+            stage_color = completed_stage_color
         elif unlocked_stages[selected_category][i]:
             stage_color = play_button_color
         else:
-            stage_color = locked_stage_color  # Grey for locked stages
+            stage_color = locked_stage_color
 
+        # Check if the current stage is unlocked or completed
         if unlocked_stages[selected_category][i] or completed_stages[selected_category][i]:
+            # If the mouse is hovering over a stage which is not completed change the color of unlocked stage
             if rect.collidepoint(mouse_pos) and not completed_stages[selected_category][i]:
                 pygame.draw.rect(screen, play_button_hover_color, rect)
             else:
@@ -458,30 +472,44 @@ def draw_stage_selection():
                                                 rect.y + (rect.height - stage_button_texts[i].get_height()) // 2))
         else:  # Stage is locked
             pygame.draw.rect(screen, locked_stage_color, rect)
+            # The locked stage is displayed as " Stage X" X is the number of the stage in order
             locked_text = small_font.render(f"Stage {i + 1}", True, WHITE)
             screen.blit(locked_text, (rect.x + (rect.width - locked_text.get_width()) // 2,
                                       rect.y + (rect.height - locked_text.get_height()) // 2))
 
 
 def handle_stage_selection(stage_index):
+    # Give access to these variables outside this function
     global current_stage, word_to_guess, guessed_word, correctly_clicked_letters, current_state
     global all_letters, rows, score
 
     current_stage = stage_index
+
+    # Set up the word to guess
+    # The words for each stage are defined earlier
+    # Convert the word to uppercase to avoid case conflict
     word_to_guess = stages[current_stage].upper()
 
-    # Initialize score for the stage
-    score = 0
-
+    # Create an array of the guessed_word by replacing each letter in the word_to_guess with " _ "
+    # The " _ " will be replaced with the correct guessed letter
     guessed_word = ["_" for _ in word_to_guess]
+
+    # This array is used to store the correct word of a player
     correctly_clicked_letters = []
 
+    # Randomly choose 5 words which are not a part of the word_to_guessed
     additional_letters = random.sample(string.ascii_uppercase, 5)
+
+    # Combine the word_to_guess with the additional_letters
     all_letters = list(word_to_guess.upper()) + additional_letters
+
+    # Shuffle the list so it appears randomly
     random.shuffle(all_letters)
 
+    # A row only contains 5 boxes of letters
     rows = [all_letters[i:i + 5] for i in range(0, len(all_letters), 5)]
 
+    # Set the current stage to game_scene which is the final stage of the project
     current_state = GAME_SCENE
 
 
@@ -490,9 +518,12 @@ def draw_game_scene():
 
     screen.blit(background_image, (0, 0))
 
+    # Determine which stage image to display na dit must be in the stage limit
     if 0 <= current_stage < len(stage_images):
         stage_image = stage_images[current_stage]
         x = (SCREEN_WIDTH - stage_image.get_width()) // 2
+
+        # Ensure the stage height will not be covered by the platform screen
         y = (SCREEN_HEIGHT - stage_image.get_height()) // 2 - 200
         screen.blit(stage_image, (x, y))
 
@@ -520,35 +551,58 @@ def draw_game_scene():
     draw_letter_boxes()
 
     if incorrect_click_time:
+        # Retrieve the current time in seconds since epoch
         current_time = time.time()
+
+        # Calculate the time difference between the current time and the incorrect_click_time
+        # The notification will be visible the result is less than the notification duration
         if current_time - incorrect_click_time < notification_duration:
             show_incorrect_click_notification()
         else:
             incorrect_click_time = None
+
+    # Check the guess_word if there is no underscore, it means that the word is fully guessed
     if "_" not in guessed_word:
-        score += 50  # Example: Award 50 points for winning
+        # Show congrats message
         current_state = CONGRATS
         show_congrats_message()
 
 
 def draw_word_boxes():
+    # Ensure that every box has the same box_size and same space between them
+    # " - box_spacing" is for the last box since there is the box behind it
     total_width = len(guessed_word) * (box_size + box_spacing) - box_spacing
+
+    # Ensure the box is centered
     start_x = (SCREEN_WIDTH - total_width) // 2
+
+    # For each letter or underscore, position the box according to the calculated x-coordinate
     for i, letter in enumerate(guessed_word):
         x = start_x + i * (box_size + box_spacing)
+
+        # Draw the box and placed in the calculated coordinate
+        # Filled the box with white background
         pygame.draw.rect(screen, WHITE, (x, start_y, box_size, box_size), 0)
+        # Using black color for the letter
         pygame.draw.rect(screen, BLACK, (x, start_y, box_size, box_size), 2)
+
+        # If the letter is underscore, leave the box empty
         if letter != "_":
+            # Filling the letter using this font
             letter_surface = font.render(letter, True, BLACK)
+            # Draw the letter onto the screen
             screen.blit(letter_surface, (
+                # Display the letter in the center of the box
                 x + (box_size - letter_surface.get_width()) // 2,
                 start_y + (box_size - letter_surface.get_height()) // 2))
 
 
 def draw_letter_boxes():
+    # Loop to draw boxes for letter based on calculated size and spacing
     for row_idx, row in enumerate(rows):
         row_start_x = (SCREEN_WIDTH - (box_size + box_spacing) * len(row)) // 2
         y = start_y + 100 + row_idx * (box_size + box_spacing)
+        # Loop through the index of letters in the row
         for i, letter in enumerate(row):
             if letter not in correctly_clicked_letters:
                 x = row_start_x + i * (box_size + box_spacing)
