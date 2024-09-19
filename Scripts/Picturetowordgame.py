@@ -107,14 +107,14 @@ audio_folder_mapping = {
 
 # Initialize the unlocked stages dictionary
 unlocked_stages = {
-    "Easy": [True] + [False] * 6,  # Only the first stage is unlocked initially
+    "Easy": [True] + [False] * 6,  # Only the first stage is unlocked in the beginning
     "Medium": [True] + [False] * 6,
-    "Hard": [True] + [False] * 5  # Hard level has 6 stages
+    "Hard": [True] + [False] * 5
 }
 
 # Initialize the completed stages dictionary
 completed_stages = {
-    "Easy": [False] * 7,  # None of the stages are completed initially
+    "Easy": [False] * 7,  # None of the stages are completed in the beginning
     "Medium": [False] * 7,
     "Hard": [False] * 6
 }
@@ -234,12 +234,7 @@ back_button_rect = pygame.Rect(10, 10, 100, 40)
 character_selection_button_rect = pygame.Rect(150, 603, 600, 40)
 
 # Define the "Audio" button
-audio_button_width = 150
-audio_button_height = 40
-audio_button_x = SCREEN_WIDTH - audio_button_width - 20
-audio_button_y = 10
-audio_button_rect = pygame.Rect(audio_button_x, audio_button_y, audio_button_width, audio_button_height)
-
+audio_button_rect = pygame.Rect(SCREEN_WIDTH - 170, 10, 150, 40)
 
 def play_bgm():
     pygame.mixer.music.load("Audio/BGM.wav")
@@ -262,9 +257,10 @@ def unpause_bgm():
 # Define category buttons
 category_button_width = 200
 category_button_height = 50
+# Adjusting the position of the category buttons
 category_buttons = [
     pygame.Rect((SCREEN_WIDTH - category_button_width) // 2, 200 + i * 80, category_button_width,
-                category_button_height) # Adjusting the position of the category button
+                category_button_height)
     for i in range(len(categories))
 ]
 category_button_texts = [small_font.render(category, True, WHITE) for category in categories]
@@ -472,7 +468,6 @@ def draw_stage_selection():
                                                 rect.y + (rect.height - stage_button_texts[i].get_height()) // 2))
         else:  # Stage is locked
             pygame.draw.rect(screen, locked_stage_color, rect)
-            # The locked stage is displayed as " Stage X" X is the number of the stage in order
             locked_text = small_font.render(f"Stage {i + 1}", True, WHITE)
             screen.blit(locked_text, (rect.x + (rect.width - locked_text.get_width()) // 2,
                                       rect.y + (rect.height - locked_text.get_height()) // 2))
@@ -551,7 +546,7 @@ def draw_game_scene():
     draw_letter_boxes()
 
     if incorrect_click_time:
-        # Retrieve the current time in seconds since epoch
+        # Retrieve the current time in seconds since this case happens
         current_time = time.time()
 
         # Calculate the time difference between the current time and the incorrect_click_time
@@ -598,13 +593,15 @@ def draw_word_boxes():
 
 
 def draw_letter_boxes():
-    # Loop to draw boxes for letter based on calculated size and spacing
+    # Loop through draw boxes for letter based on calculated size and spacing
     for row_idx, row in enumerate(rows):
+        # Calculate the x and y coordinate of all boxes combined
         row_start_x = (SCREEN_WIDTH - (box_size + box_spacing) * len(row)) // 2
         y = start_y + 100 + row_idx * (box_size + box_spacing)
         # Loop through the index of letters in the row
         for i, letter in enumerate(row):
             if letter not in correctly_clicked_letters:
+                # Calculate the position of each box in the row
                 x = row_start_x + i * (box_size + box_spacing)
                 pygame.draw.rect(screen, WHITE, (x, y, box_size, box_size), 0)
                 pygame.draw.rect(screen, BLACK, (x, y, box_size, box_size), 2)
@@ -621,7 +618,7 @@ def show_congrats_message():
     popup_x = (SCREEN_WIDTH - popup_width) // 2
     popup_y = (SCREEN_HEIGHT - popup_height) // 2
 
-    popup_color = (255, 255, 224)  # LIGHT_YELLOW
+    popup_color = (255, 255, 224)
     border_color = BLACK
 
     pygame.draw.rect(screen, popup_color, (popup_x, popup_y, popup_width, popup_height))
@@ -642,8 +639,10 @@ def show_congrats_message():
     screen.blit(button_text, (button_x + (button_width - button_text.get_width()) // 2,
                               button_y + (button_height - button_text.get_height()) // 2))
 
+    # Whenever a congratulatory message shows up mark the current stage as completed
     completed_stages[selected_category][current_stage] = True
 
+    # Unlock the next stage
     if current_stage + 1 < len(unlocked_stages[selected_category]):
         unlocked_stages[selected_category][current_stage + 1] = True
 
@@ -651,18 +650,21 @@ def show_congrats_message():
 
     pygame.display.flip()
 
+    # While true loop
     waiting = True
     while waiting:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            # Check if the user click on the "continue" button
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Get the position of the cursor at the time it pressed
                 mouse_x, mouse_y = event.pos
+                # Ensure that the cursor position when it is clicked within the "continue" button
                 if button_x < mouse_x < button_x + button_width and button_y < mouse_y < button_y + button_height:
                     waiting = False
                     break
-        pygame.time.delay(100)
 
     current_state = STAGE_SELECTION
 
@@ -673,9 +675,12 @@ def handle_mouse_click(x, y):
     global show_reward_frame, claimed_days, total_gems, start_time, current_day
 
     if current_state == MAIN_MENU:
+        # If player clicks on the play button in the main menu
+        # Move to the intro scene and play background music
         if play_button_rect.collidepoint(x, y):
             current_state = INTRO_SCENE
             play_bgm()
+        # If the exit button is pressed, save and exit the game
         elif exit_button_rect.collidepoint(x, y):
             save_game_progress()
             stop_bgm()
@@ -712,17 +717,19 @@ def handle_mouse_click(x, y):
                         claimed_days[num_boxes_top + i] = True
                         total_gems += gems_per_day[num_boxes_top + i]
 
+    # Don't need to get any action from the mouse since the intro scene take the spacebars as input
     elif current_state == INTRO_SCENE:
         pass
 
     elif current_state == CATEGORY_SCENE:
+        # If the back button is clicked brings user back to the main menu
         if back_button_rect.collidepoint(x, y):
             current_state = MAIN_MENU
         else:
             for i, rect in enumerate(category_buttons):
                 if rect.collidepoint(x, y):
+                    # Open the associated level with the button that is clicked
                     selected_category = categories[i]
-
                     stages = category_to_stages[selected_category]
                     image_folder_path = category_folder_mapping[selected_category]
                     audio_folder_path = audio_folder_mapping[selected_category]
@@ -767,17 +774,24 @@ def handle_mouse_click(x, y):
                 unpause_bgm()
         else:
             for row_idx, row in enumerate(rows):
+                # Placing the row of boxes both horizontally and vertically in the middle
                 row_start_x = (SCREEN_WIDTH - (box_size + box_spacing) * len(row)) // 2
                 box_y = start_y + 100 + row_idx * (box_size + box_spacing)
                 for i, letter in enumerate(row):
+                    # Setting position of each box in the row
                     box_x = row_start_x + i * (box_size + box_spacing)
+                    # Check the click if it is within the box size
                     if box_x < x < box_x + box_size and box_y < y < box_y + box_size:
                         letter = letter.upper()
+                        # Check if the clicked word is in the word to guess also check if it was not clicked
                         if letter in word_to_guess.upper() and letter not in correctly_clicked_letters:
+                            # Add the correct clicked word to the list
                             correctly_clicked_letters.append(letter)
                             for idx, char in enumerate(word_to_guess.upper()):
+                                # Update the guessed word list to show the correct letter
                                 if char == letter:
                                     guessed_word[idx] = letter
+                            # If all letters have been guessed show the congrats message
                             if "_" not in guessed_word:
                                 current_state = CONGRATS
                                 show_congrats_message()
